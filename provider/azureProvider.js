@@ -363,45 +363,56 @@ class AzureProvider {
     });
   }
 
-  invoke (functionName, eventType, eventData) {
-    if (eventType === 'http') {
-      let queryString = '';
+  invokeWithHTTPEvent(functionName, eventData, isAnonymous) {
+    let queryString = '';
+   
+    let headers = {};
 
-      if (eventData) {
-        if (typeof eventData === 'string') {
-          try {
-            eventData = JSON.parse(eventData);
-          }
-          catch (error) {
-            return BbPromise.reject('The specified input data isn\'t a valid JSON string. ' +
-                                    'Please correct it and try invoking the function again.');
-          }
-        }
-
-        queryString = Object.keys(eventData)
-                            .map((key) => `${key}=${eventData[key]}`)
-                            .join('&');
-      }
-
-      return new BbPromise((resolve, reject) => {
-        const options = {
-          url: `http://${functionAppName}${config.functionAppDomain}${config.functionAppApiPath + functionName}?${queryString}`,
-          method: 'GET',
-          json: true,
-        };
-
-        this.serverless.cli.log(`Invoking function "${functionName}"`);
-        request(options, (err, response, body) => {
-          if (err) return reject(err);
-          if (response.statusCode !== 200) return reject(body);
-
-          console.log(body);
-
-          resolve(body);
-        });
-      });
+    if (!isAnonymous) {
+      headers = {
+        'x-functions-key': functionsAdminKey,
+      }; 
     }
 
+    if (eventData) {
+      if (typeof eventData === 'string') {
+        try {
+          eventData = JSON.parse(eventData);
+        }
+        catch (error) {
+          return BbPromise.reject('The specified input data isn\'t a valid JSON string. ' +
+                                  'Please correct it and try invoking the function again.');
+        }
+      }
+
+      queryString = Object.keys(eventData)
+                          .map((key) => `${key}=${eventData[key]}`)
+                          .join('&');
+    }
+
+    return new BbPromise((resolve, reject) => {
+      const options = {
+        url: `http://${functionAppName}${config.functionAppDomain}${config.functionAppApiPath + functionName}?${queryString}`,
+        method: 'GET',
+        json: true,
+        headers: headers,
+      };
+
+      console.log(options);
+
+      this.serverless.cli.log(`Invoking function "${functionName}"`);
+      request(options, (err, response, body) => {
+        if (err) return reject(err);
+        if (response.statusCode !== 200) return reject(body);
+
+        console.log(body);
+
+        resolve(body);
+      });
+    });
+  }
+
+  invoke (functionName, eventData) {
     const requestUrl = `https://${functionAppName}${config.functionsAdminApiPath}${functionName}`;
 
     const options = {

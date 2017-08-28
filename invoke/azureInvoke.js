@@ -31,13 +31,7 @@ class AzureInvoke {
     }
 
     this.hooks = {
-
-      // TODO: See ./lib/invokeFunction.js:L10
-      'before:invoke:invoke': () => BbPromise.bind(this)
-        .then(this.provider.initialize(this.serverless,this.options))
-        .then(this.loginToAzure)
-        .then(this.getAdminKey),
-
+      // TODO: See ./lib/invokeFunction.js:L40
       'invoke:invoke': () => BbPromise.bind(this)
         .then(this.provider.initialize(this.serverless,this.options))
         .then(this.invokeFunction)
